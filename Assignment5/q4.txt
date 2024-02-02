@@ -1,0 +1,158 @@
+For last inserted actor_id: i.e.
+cursor.execute("select act_id from actor")
+actor_id = cursor.fetchall()[-1][0]
+
+
+Case 1:  Concurrent Inserts with No Conflicts
+    Terminal 1(input): PS C:\Users\suyas\OneDrive\Documents\PostGreSQL\Assignment5> python .\q3.py
+                Enter the number of movies: 2
+                Enter movie id of movie number 1: 902
+                Enter role of the actor in movie number 1: Light Yagami
+                Enter movie id of movie number 2: 903
+                Enter role of the actor in movie number 2: Ryuk
+    Terminal 2(input): PS C:\Users\suyas\OneDrive\Documents\PostGreSQL\Assignment5> python .\q3.py
+                Enter the number of movies: 2
+                Enter movie id of movie number 1: 904
+                Enter role of the actor in movie number 1: Soichiro Yagami
+                Enter movie id of movie number 2: 905
+                Enter role of the actor in movie number 2: Sayu Yagami
+                
+    Terminal 1(output): Database update successfull
+    Terminal 2(output): Database update successfull
+    
+    Code Snippet: It will not throw any error
+        for i in range(len(roles)):
+            cursor.execute("insert into movie_cast (act_id,mov_id,role) values (%s,%s,%s)", (actor_id,roles[i][0],roles[i][1]))
+
+    Observation:
+        Both Terminal 1 and Terminal 2 execute without any issues.
+        All actors and movies are successfully inserted.
+
+-------------------------------------------------------------------------------------
+
+Case 2: Conflict with Rollback
+    Terminal 1(input): PS C:\Users\suyas\OneDrive\Documents\PostGreSQL\Assignment5> python .\q3.py
+                        Enter the number of movies: 2
+                        Enter movie id of movie number 1: 906
+                        Enter role of the actor in movie number 1: Harry Potter
+                        Enter movie id of movie number 2: 907
+                        Enter role of the actor in movie number 2: Hermione Granger
+    Terminal 2(input): PS C:\Users\suyas\OneDrive\Documents\PostGreSQL\Assignment5> python .\q3.py
+                        Enter the number of movies: 2
+                        Enter movie id of movie number 1: 907
+                        Enter role of the actor in movie number 1: Prof. Snape
+                        Enter movie id of movie number 2: 908
+                        Enter role of the actor in movie number 2: Lord Voldemort
+
+    Terminal 1(output): Database update successfull
+    Terminal 2(output): Error!! This actor has already a role in this movie.
+                        DETAIL:  Key (mov_id, act_id)=(907, 100) already exists
+                        ROLLBACK
+                        Database is not updated!
+            
+    Code Snippet:
+        for i in range(len(roles)):
+            try:
+                cursor.execute("insert into movie_cast (act_id,mov_id,role) values (%s,%s,%s)", (actor_id,roles[i][0],roles[i][1]))
+            except psycopg2.Error as e:
+                print("Error!! This actor has already a role in this movie.")
+                print(f"DETAIL:  Key (mov_id, act_id)=({roles[i][0]}, {actor_id}) already exists")
+                print("ROLLBACK")
+                moviedb_connection.rollback()
+
+    Expected Observation:
+        Terminal 1 successfully inserts the actor into movies 906 and 907.
+        Terminal 2 encounters a conflict while trying to insert the actor into movie 907 (which already exists). It rolls back the transaction.
+                    
+---------------------------------------------------------------------------------------------------------------------------------------
+
+Case 3: Inserting one valid and other invalid (i.e. movie_id does not exists) argument
+    Terminal 1(input): PS C:\Users\suyas\OneDrive\Documents\PostGreSQL\Assignment5> python .\q3.py
+                        Enter the number of movies: 2
+                        Enter movie id of movie number 1: 909
+                        Enter role of the actor in movie number 1: Harry
+                        Enter movie id of movie number 2: 101
+                        Enter role of the actor in movie number 2: Anabelle
+        
+    Terminal 2(input): PS C:\Users\suyas\OneDrive\Documents\PostGreSQL\Assignment5> python .\q3.py
+                        Enter the number of movies: 2
+                        Enter movie id of movie number 1: 909
+                        Enter role of the actor in movie number 1: Harry
+                        Enter movie id of movie number 2: 910
+                        Enter role of the actor in movie number 2: Potter
+
+    Terminal 1(output): Movie number 101 is not present in the database. Database is not updated
+                        ROLLBACK
+                        Database is not updated!
+    Terminal 2(output):Database update successfull
+
+    Code Snippet:
+        for i in range(len(roles)):
+            cursor.execute(f"select * from movie where mov_id = {roles[i][0]}")
+            result = cursor.fetchone()
+            if not result:
+                print(f"Movie number {roles[i][0]} is not present in the database. Database is not updated")
+                moviedb_connection.rollback()
+                print("ROLLBACK")
+
+    Observation:
+    Terminal 1 shows that it cannot insert an actor to non-existing movie as expected 
+    but Terminal 2 can add actors for existing movies without any errors or conflicts.
+
+------------------------------------------------------------------------------------------------------------------------
+
+Case 4: Inserting one valid (but existed) and other invalid argument in terminal 2
+    Terminal 1(input): PS C:\Users\suyas\OneDrive\Documents\PostGreSQL\Assignment5> python .\q3.py
+                        Enter the number of movies: 2
+                        Enter movie id of movie number 1: 911
+                        Enter role of the actor in movie number 1: Iron Man
+                        Enter movie id of movie number 2: 912
+                        Enter role of the actor in movie number 2: Hulk
+        
+    Terminal 2(input): PS C:\Users\suyas\OneDrive\Documents\PostGreSQL\Assignment5> python .\q3.py
+                        Enter the number of movies: 2
+                        Enter movie id of movie number 1: 911
+                        Enter role of the actor in movie number 1: Captain
+                        Enter movie id of movie number 2: 101
+                        Enter role of the actor in movie number 2: Bowler
+
+    Terminal 1(output): Database update successfull
+    Terminal 2(output): Error!! This actor has already a role in this movie.
+                        DETAIL:  Key (mov_id, act_id)=(911, 100) already exists
+                        ROLLBACK
+                        Database is not updated!
+
+    Code Snippet:
+        for i in range(len(roles)):
+            ursor.execute(f"select * from movie where mov_id = {roles[i][0]}")
+        result = cursor.fetchone()
+        if not result:
+            print(f"Movie number {roles[i][0]} is not present in the database. Database is not updated")
+            moviedb_connection.rollback()
+            print("ROLLBACK")
+            flag=0
+            break
+
+        try:
+            cursor.execute("insert into movie_cast (act_id,mov_id,role) values (%s,%s,%s)", (actor_id,roles[i][0],roles[i][1]))
+        except psycopg2.Error as e:
+            print("Error!! This actor has already a role in this movie.")
+            print(f"DETAIL:  Key (mov_id, act_id)=({roles[i][0]}, {actor_id}) already exists")
+            print("ROLLBACK")
+            moviedb_connection.rollback()
+            flag=0
+            break
+
+        if flag:
+            print("Database update successfull")
+        else:
+            print("Database is not updated!")
+
+    Observation:
+        Terminal 1 successfully inserts the actor into movies 911 and 912.
+        Terminal 2 throws an ERROR because Key (mov_id, act_id)=(911, 100) already exists and it will rollback the transaction and it will not proceed further whether the coming command is valid or not.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+

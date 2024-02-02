@@ -1,0 +1,56 @@
+--Q1
+match(reviewer:Person) -[rat:REVIEWED]-> (movie:Movie)
+match(director:Person) -[:DIRECTED]-> (movie)
+return rat.rating as Ratings, director.name as MovieDirector
+
+--Q2
+MATCH (person:Person)
+OPTIONAL MATCH (person)-[:DIRECTED]->(movie:Movie)
+RETURN person.name as PersonName, COLLECT(DISTINCT movie.title) AS DirectedMovies
+
+--q3
+match(person1:Person) -[:ACTED_IN]-> (movie:Movie)
+match(Tom:Person) -[:ACTED_IN]-> (movie)
+where Tom.name = "Tom Hanks" and person1.name <> "Tom Hanks"
+return person1.name as CoWorkers, movie.title as MovieTitle
+
+--Q4
+match(person1:Person) -[:ACTED_IN]-> (movie:Movie)
+match(Tom:Person) -[:ACTED_IN]-> (movie)
+where Tom.name = "Tom Hanks" and person1.name <> "Tom Hanks"
+return distinct person1.name as CoWorkers, collect(distinct movie.title) as MovieTitle
+
+--Q5
+MATCH (p1:Person)-[:ACTED_IN]->(movie:Movie)
+match(p2:Person) -[:ACTED_IN]->(movie)
+RETURN [p1.name, p2.name] AS CoWorkerPair, COLLECT(DISTINCT movie.title) AS MovieTitles
+
+--Q6
+MATCH (p1:Person)-[:ACTED_IN]->(movie:Movie)
+match(p2:Person) -[:ACTED_IN]->(movie)
+WHERE id(p1) < id(p2)
+RETURN [p1.name, p2.name] AS CoWorkerPair, COLLECT(DISTINCT movie.title) AS MovieTitles
+
+--Q7
+match(p:Person)
+set p.Current_Age = 2023-p.born
+return p.name as PersonName, p.Current_Age as PersonCurrentAge
+
+--Q8
+MATCH (person:Person)
+OPTIONAL MATCH (person) -[:ACTED_IN]-> (movie:Movie)
+WITH person, COUNT(movie) AS MovieCount
+SET person.Num_movies_acted = COALESCE(MovieCount, 0)
+return person.name as PersonName, person.Num_movies_acted as Num_movies_acted
+
+--Q9
+match(p:Person)
+optional match (p) -[:REVIEWED]-> (movie:Movie)
+return p.name as PersonName, collect(distinct movie.title) as MovieReviewed
+
+--Q10
+match(movie:Movie)
+OPTIONAL match(actor:Person) -[:ACTED_IN]-> (movie:Movie)
+OPTIONAL match(director:Person) -[:DIRECTED]-> (movie:Movie)
+with movie.title as MovieTitle, count(distinct actor) as ActorCount, count(distinct director) as DirectorCount
+return MovieTitle, ActorCount, DirectorCount

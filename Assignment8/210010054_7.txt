@@ -1,0 +1,64 @@
+Insert and Delete
+   3.	127.0.0.1:6379> set client1 21
+	OK
+	127.0.0.1:6379> get client1
+	"21"
+	127.0.0.1:6379> set client hello
+	OK
+	Result => It successfully overwrites the previous 	data in client1
+
+   4.	127.0.0.1:6379> get client100
+	(nil)
+	Result => we are getting null output
+
+   6.	127.0.0.1:6379> del client100
+	(integer) 0
+	Result => nothing got deleted as it doesn't exist
+
+   7.   set client:1:name Alice
+   8.   set client:1:level 1
+
+Delete based on time
+   2.   EXISTS client:1:name
+   3.   set Message "Hello world"
+   6.   ttl message
+	Result=> (integer) -1
+   7.   ttl client100
+	Result => (integer) -2
+   10.  persist message
+	Result => (integer) 0
+   11.  persist client100
+	Result => (integer) 0
+
+List
+   2.   127.0.0.1:6379> del Customer
+	(integer) 1
+	127.0.0.1:6379> lpush Customer Alice Bob Charles
+	(integer) 3 
+   4.   lrange Customer 0 1
+   6.   linsert Customer before Bob Dumbledore
+   9.   lpop Customer
+   10.  flushall
+
+Set
+   2.   sadd courses Economics
+   4.   sadd courses Physics
+	Result => (integer) 0  i.e. it already contain 	Physics in it. So it won't work.
+   7.   sismember courses Chemistry
+   10.  srem Chemistry
+   11.. flushall
+
+Ordered set
+   3.   zadd Clients 3200 Charles
+        Result => (integer) 0  i.e. succesfully inserted
+   5.   zrank Clients Dumbledore
+	Result => (nil) i.e. not found
+   7.   zrange clients 0 -1
+   8.   flushall
+
+Hash set
+   3.   hget Customer:1 address
+   4.   hget Customer:2 name
+   6.   hgetall Customer:2
+   9.   hkeys Customer:2
+   10.  hvals Customer:2

@@ -1,0 +1,90 @@
+Create and list database
+--Q3
+show dbs
+//it will not show companyDB. To see "CompanyDB" in the list of databases, you need to insert data into it or perform some operation that causes MongoDB to recognize the existence of the database.
+
+Insert
+--Q3
+db.customers.insertOne({
+  name: "Alice",
+  age: 24
+})
+--Q4
+show dbs
+//companyDB   40.00 KiB
+admin      340.00 KiB
+local       12.45 GiB
+
+Find
+--Q4
+db.customers.find({age: {$lt: 27} })
+--Q5
+ db.customers.find({age: {$lte: 27} })
+
+Update
+--Q2
+db.customers.updateOne({ name: "Alice" }, { age: 29 } )
+\\Result:
+MongoInvalidArgumentError: Update document requires atomic operators
+
+Delete
+--Q2
+db.customers.find({})
+
+
+Exercise (Redis)
+--Q1
+set course:1:title "Data Management"
+set course:1:NumberOfStudents 3
+sadd course:1:textbooks "Fundamentals of Database Systems" "No SQL for Mere Mortals"
+
+--Q2
+zadd course:1:students 9.1 "Alice" 8.9 "Bob" 9.0 "Charles"
+
+--Q3
+zrange course:1:students 0 -1
+
+--Q4
+SCARD course:1:textbooks
+
+--Q5
+RENAME course:1:textbooks course:1:materials
+
+--Q6
+sadd course:1:materials "slides"
+
+--Q7
+set course:1:assignment4 "Redis and MongoDB"
+
+--Q8
+expire course:1:handout10 100
+
+--Q9
+keys *
+
+--Q10
+DEL course:1:NumberOfStudents
+
+
+Exercise (MongoDB)
+--Q1
+show dbs
+
+--Q2
+show collections
+
+--Q3
+db.listingsAndReviews.find(
+  { "address.country": "Australia" },
+  { _id: 1, name: 1 }
+)
+
+--Q4
+db.listingsAndReviews.find(
+  { "bedrooms": {$gte: 2} },
+  { _id: 1, name: 1 }
+)
+
+--Q5
+db.listingsAndReviews.find({"address.location.is_location_exact":true}, 
+{ _id: 1, name: 1, address: 1 })
